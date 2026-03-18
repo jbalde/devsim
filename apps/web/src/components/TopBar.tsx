@@ -7,9 +7,11 @@ interface Props {
   onToggle: () => void;
   onShowHire: () => void;
   onShowTasks: () => void;
+  onAutoLayout: () => void;
+  onCreateSquad: () => void;
 }
 
-export function TopBar({ company, running, agentCount, onToggle, onShowHire, onShowTasks }: Props) {
+export function TopBar({ company, running, agentCount, onToggle, onShowHire, onShowTasks, onAutoLayout, onCreateSquad }: Props) {
   return (
     <div
       style={{
@@ -36,6 +38,8 @@ export function TopBar({ company, running, agentCount, onToggle, onShowHire, onS
       <div style={{ display: 'flex', gap: 8 }}>
         <Btn onClick={onShowHire}>Hire</Btn>
         <Btn onClick={onShowTasks}>Tasks</Btn>
+        <Btn onClick={onAutoLayout}>Autolayout</Btn>
+        <Btn onClick={onCreateSquad}>+ Squad</Btn>
         <Btn onClick={onToggle} accent>
           {running ? 'Pause' : 'Play'}
         </Btn>

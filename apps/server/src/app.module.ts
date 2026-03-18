@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { CompanyModule } from './company/company.module';
 import { AgentsModule } from './agents/agents.module';
 import { TasksModule } from './tasks/tasks.module';
+import { SquadsModule } from './squads/squads.module';
 import { SimulationModule } from './simulation/simulation.module';
 import { EventsModule } from './events/events.module';
 
@@ -11,6 +12,7 @@ import { EventsModule } from './events/events.module';
     CompanyModule,
     AgentsModule,
     TasksModule,
+    SquadsModule,
     SimulationModule,
   ],
 })

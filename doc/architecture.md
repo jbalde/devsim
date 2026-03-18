@@ -31,8 +31,11 @@ src/
 ├── company/       # Company state (budget, tokens, ticks)
 ├── events/        # Global WebSocket gateway (Socket.IO)
 ├── simulation/    # Tick-based engine that drives agent behavior
+├── squads/        # Squad CRUD, member management
 └── tasks/         # Task CRUD and assignment
 ```
+
+Circular dependency between `AgentsModule` and `SquadsModule` is resolved via NestJS `forwardRef`.
 
 ## Data Flow
 
@@ -56,6 +59,10 @@ Service Layer (business logic)
         React state update → UI re-render
 ```
 
+### Optimistic Updates
+
+Squad operations (move, add/remove members) use **optimistic updates** — the frontend updates local state immediately, then sends the API call in the background. This avoids waiting for the server round-trip and WebSocket event, making interactions feel instant.
+
 ## Simulation Engine
 
 The simulation runs on a **tick-based loop** (every 2 seconds):
@@ -65,6 +72,16 @@ The simulation runs on a **tick-based loop** (every 2 seconds):
 3. **Completed tasks** trigger review requests between peers
 4. **Budget** decreases based on each agent's `costPerTick`
 5. All state changes emit WebSocket events to the frontend
+
+## Squad System
+
+Squads represent work teams and are visualized as tables on the office canvas:
+
+- Each squad has a name, color, position, and list of member IDs
+- Agents can be added to squads by **dragging them onto the table** or via the right-click context menu
+- An agent can only belong to one squad at a time (adding to a new squad removes from the previous)
+- Squads can be dragged around the office and are included in the autolayout algorithm
+- The autolayout calculates each squad's size based on member count to prevent overlapping
 
 ## CJS/ESM Compatibility
 

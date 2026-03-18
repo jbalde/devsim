@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject, forwardRef } from '@nestjs/common';
 import {
   Agent,
   AgentRole,
@@ -9,6 +9,7 @@ import {
   WsEvent,
 } from '@devsim/shared';
 import { EventsGateway } from '../events/events.gateway';
+import { SquadsService } from '../squads/squads.service';
 import { v4 as uuid } from 'uuid';
 
 const NAMES: Record<AgentRole, string[]> = {
@@ -29,7 +30,10 @@ export class AgentsService {
   private agents = new Map<string, Agent>();
   private messages: AgentMessage[] = [];
 
-  constructor(private events: EventsGateway) {}
+  constructor(
+    private events: EventsGateway,
+    @Inject(forwardRef(() => SquadsService)) private squads: SquadsService,
+  ) {}
 
   hire(role: AgentRole): Agent {
     const profile = AGENT_PROFILES[role];
@@ -69,6 +73,7 @@ export class AgentsService {
     const agent = this.agents.get(agentId);
     if (!agent) return false;
     this.agents.delete(agentId);
+    this.squads.removeAgentFromAll(agentId);
     this.events.emit(WsEvent.AGENT_FIRED, { id: agentId });
     return true;
   }

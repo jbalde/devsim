@@ -17,6 +17,9 @@ export const WsEvent = {
   MESSAGE_SENT: 'message:sent',
   TICK: 'simulation:tick',
   COMPANY_UPDATED: 'company:updated',
+  SQUAD_CREATED: 'squad:created',
+  SQUAD_UPDATED: 'squad:updated',
+  SQUAD_DELETED: 'squad:deleted',
 } as const;
 
 export type WsEvent = (typeof WsEvent)[keyof typeof WsEvent];
