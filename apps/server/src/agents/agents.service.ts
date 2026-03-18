@@ -111,6 +111,11 @@ export class AgentsService {
     return this.messages.slice(-limit);
   }
 
+  clearMessages() {
+    this.messages = [];
+    this.events.emit(WsEvent.MESSAGES_CLEARED, { ok: true });
+  }
+
   /** Agents talk to each other — used by simulation engine */
   agentChat(fromId: string, toId: string | null, content: string, taskId: string | null = null) {
     this.sendMessage({

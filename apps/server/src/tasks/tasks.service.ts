@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Task, TaskStatus, TaskPriority, WsEvent } from '@devsim/shared';
+import { Task, TaskStatus, TaskPriority, TaskType, WsEvent } from '@devsim/shared';
 import { EventsGateway } from '../events/events.gateway';
 import { v4 as uuid } from 'uuid';
 
@@ -12,6 +12,8 @@ export class TasksService {
   create(data: {
     title: string;
     description: string;
+    type?: TaskType;
+    epicId?: string;
     priority?: TaskPriority;
     requiredSkills?: string[];
     estimatedTicks?: number;
@@ -22,6 +24,8 @@ export class TasksService {
       id: uuid(),
       title: data.title,
       description: data.description,
+      type: data.type ?? TaskType.TASK,
+      epicId: (data.type ?? TaskType.TASK) === TaskType.EPIC ? null : data.epicId ?? null,
       status: TaskStatus.BACKLOG,
       priority: data.priority ?? TaskPriority.MEDIUM,
       assigneeId: null,
@@ -50,7 +54,11 @@ export class TasksService {
   update(id: string, partial: Partial<Task>): Task | undefined {
     const task = this.tasks.get(id);
     if (!task) return undefined;
-    Object.assign(task, partial);
+    const normalized = { ...partial };
+    if (normalized.type === TaskType.EPIC) {
+      normalized.epicId = null;
+    }
+    Object.assign(task, normalized);
     this.events.emit(WsEvent.TASK_UPDATED, task);
     return task;
   }
@@ -58,6 +66,12 @@ export class TasksService {
   delete(id: string): boolean {
     const deleted = this.tasks.delete(id);
     if (deleted) {
+      for (const task of this.tasks.values()) {
+        if (task.epicId === id) {
+          task.epicId = null;
+          this.events.emit(WsEvent.TASK_UPDATED, task);
+        }
+      }
       this.events.emit(WsEvent.TASK_DELETED, { id });
     }
     return deleted;
@@ -65,7 +79,7 @@ export class TasksService {
 
   getUnassigned(): Task[] {
     return this.getAll().filter(
-      (t) => !t.assigneeId && t.status !== TaskStatus.DONE,
+      (t) => t.type === TaskType.TASK && !t.assigneeId && t.status !== TaskStatus.DONE,
     );
   }
 
@@ -77,7 +91,12 @@ export class TasksService {
   restore(tasks: Task[]) {
     this.tasks.clear();
     for (const t of tasks) {
-      this.tasks.set(t.id, t);
+      const type = t.type ?? TaskType.TASK;
+      this.tasks.set(t.id, {
+        ...t,
+        type,
+        epicId: type === TaskType.EPIC ? null : t.epicId ?? null,
+      });
     }
   }
 }

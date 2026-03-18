@@ -5,9 +5,10 @@ import { AgentsModule } from '../agents/agents.module';
 import { TasksModule } from '../tasks/tasks.module';
 import { CompanyModule } from '../company/company.module';
 import { LlmModule } from '../llm/llm.module';
+import { ProjectsModule } from '../projects/projects.module';
 
 @Module({
-  imports: [AgentsModule, TasksModule, CompanyModule, LlmModule],
+  imports: [AgentsModule, TasksModule, CompanyModule, LlmModule, ProjectsModule],
   providers: [SimulationService],
   controllers: [SimulationController],
 })

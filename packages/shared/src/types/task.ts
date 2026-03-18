@@ -17,10 +17,19 @@ export const TaskPriority = {
 
 export type TaskPriority = (typeof TaskPriority)[keyof typeof TaskPriority];
 
+export const TaskType = {
+  EPIC: 'epic',
+  TASK: 'task',
+} as const;
+
+export type TaskType = (typeof TaskType)[keyof typeof TaskType];
+
 export interface Task {
   id: string;
   title: string;
   description: string;
+  type: TaskType;
+  epicId: string | null;
   status: TaskStatus;
   priority: TaskPriority;
   assigneeId: string | null;

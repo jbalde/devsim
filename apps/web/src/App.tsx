@@ -173,8 +173,16 @@ export function App() {
               squads={sim.squads}
               projects={sim.projects}
               selectedProjectId={selectedProjectId}
-              onCreateTask={async (title, description, projectId, squadId) => {
-                await api.createTask({ title, description, projectId: projectId ?? undefined, squadId: squadId ?? undefined });
+              onCreateTask={async (title, description, type, epicId, projectId, squadId) => {
+                await api.createTask({
+                  title,
+                  description,
+                  type,
+                  epicId: epicId ?? undefined,
+                  projectId: projectId ?? undefined,
+                  squadId: squadId ?? undefined,
+                });
+                await sim.refresh();
               }}
               onUpdateTask={(id, data) => sim.updateTask(id, data)}
               onDeleteTask={(id) => sim.deleteTask(id)}

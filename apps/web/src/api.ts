@@ -21,9 +21,10 @@ export const api = {
   updateAgentPosition: (id: string, x: number, y: number) =>
     request(`/agents/${id}/position`, { method: 'PATCH', body: JSON.stringify({ x, y }) }),
   getMessages: () => request('/agents/messages'),
+  clearMessages: () => request('/agents/messages', { method: 'DELETE' }),
 
   getTasks: () => request('/tasks'),
-  createTask: (data: { title: string; description: string; projectId?: string; squadId?: string; requiredSkills?: string[]; estimatedTicks?: number }) =>
+  createTask: (data: { title: string; description: string; type?: string; epicId?: string; projectId?: string; squadId?: string; requiredSkills?: string[]; estimatedTicks?: number }) =>
     request('/tasks', { method: 'POST', body: JSON.stringify(data) }),
   updateTask: (id: string, data: Record<string, unknown>) =>
     request(`/tasks/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
@@ -69,4 +70,6 @@ export const api = {
     request(`/projects/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   deleteProject: (id: string) =>
     request(`/projects/${id}`, { method: 'DELETE' }),
+
+  saveState: () => request('/persistence/save', { method: 'POST' }),
 };

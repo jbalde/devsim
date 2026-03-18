@@ -8,7 +8,7 @@ interface Props {
   squads: Squad[];
   projects: Project[];
   selectedProjectId: string | null;
-  onCreateTask: (title: string, description: string, projectId: string | null, squadId: string | null) => void;
+  onCreateTask: (title: string, description: string, type: string, epicId: string | null, projectId: string | null, squadId: string | null) => Promise<void>;
   onUpdateTask: (id: string, data: Record<string, unknown>) => void;
   onDeleteTask: (id: string) => void;
   onClose: () => void;
@@ -35,6 +35,8 @@ const inputStyle: React.CSSProperties = {
 };
 
 type View = 'list' | 'create' | 'detail';
+const TASK_TYPE_TASK = 'task';
+const TASK_TYPE_EPIC = 'epic';
 
 export function TaskPanel({ tasks, agents, squads, projects, selectedProjectId, onCreateTask, onUpdateTask, onDeleteTask, onClose }: Props) {
   const { t } = useI18n();
@@ -60,6 +62,8 @@ export function TaskPanel({ tasks, agents, squads, projects, selectedProjectId, 
   // Create form state
   const [title, setTitle] = useState('');
   const [desc, setDesc] = useState('');
+  const [taskType, setTaskType] = useState<string>(TASK_TYPE_TASK);
+  const [epicId, setEpicId] = useState<string>('');
   const [projectId, setProjectId] = useState<string>('');
   const [squadId, setSquadId] = useState<string>('');
 
@@ -67,6 +71,8 @@ export function TaskPanel({ tasks, agents, squads, projects, selectedProjectId, 
   const [editing, setEditing] = useState(false);
   const [editTitle, setEditTitle] = useState('');
   const [editDesc, setEditDesc] = useState('');
+  const [editType, setEditType] = useState<string>(TASK_TYPE_TASK);
+  const [editEpicId, setEditEpicId] = useState<string>('');
   const [editStatus, setEditStatus] = useState<string>('');
   const [editPriority, setEditPriority] = useState<string>('');
   const [editProjectId, setEditProjectId] = useState<string>('');
@@ -82,20 +88,44 @@ export function TaskPanel({ tasks, agents, squads, projects, selectedProjectId, 
   }, [tasks, selectedProjectId]);
 
   const selectedTask = tasks.find((t) => t.id === selectedTaskId);
+  const availableEpics = useMemo(() => {
+    const projectScope = selectedProjectId || effectiveProjectId || '';
+    return tasks.filter((task) =>
+      (task.type ?? TASK_TYPE_TASK) === TASK_TYPE_EPIC &&
+      (!projectScope || task.projectId === projectScope),
+    );
+  }, [tasks, selectedProjectId, effectiveProjectId]);
 
   const selectedProjectName = selectedProjectId
     ? projects.find((p) => p.id === selectedProjectId)?.name
     : null;
 
   // --- Handlers ---
-  const handleCreate = () => {
+  const handleCreate = async () => {
     if (!title.trim()) return;
-    onCreateTask(title.trim(), desc.trim(), effectiveProjectId || null, squadId || null);
+    await onCreateTask(
+      title.trim(),
+      desc.trim(),
+      taskType,
+      taskType === TASK_TYPE_TASK ? epicId || null : null,
+      effectiveProjectId || null,
+      squadId || null,
+    );
     setTitle('');
     setDesc('');
+    setTaskType(TASK_TYPE_TASK);
+    setEpicId('');
     setProjectId('');
     setSquadId('');
     setView('list');
+  };
+
+  const openCreate = (type: string) => {
+    setTaskType(type);
+    if (type === TASK_TYPE_EPIC) {
+      setEpicId('');
+    }
+    setView('create');
   };
 
   const openDetail = (task: Task) => {
@@ -107,6 +137,8 @@ export function TaskPanel({ tasks, agents, squads, projects, selectedProjectId, 
   const startEdit = (task: Task) => {
     setEditTitle(task.title);
     setEditDesc(task.description);
+    setEditType(task.type);
+    setEditEpicId(task.epicId || '');
     setEditStatus(task.status);
     setEditPriority(task.priority);
     setEditProjectId(task.projectId || '');
@@ -119,6 +151,8 @@ export function TaskPanel({ tasks, agents, squads, projects, selectedProjectId, 
     await onUpdateTask(selectedTaskId, {
       title: editTitle.trim(),
       description: editDesc.trim(),
+      type: editType,
+      epicId: editType === TASK_TYPE_TASK ? editEpicId || null : null,
       status: editStatus,
       priority: editPriority,
       projectId: editProjectId || null,
@@ -148,7 +182,7 @@ export function TaskPanel({ tasks, agents, squads, projects, selectedProjectId, 
             </button>
           )}
           <span style={{ fontWeight: 700, fontSize: 14 }}>
-            {view === 'list' ? t.task.title : view === 'create' ? t.task.newTask : t.task.taskDetail}
+            {view === 'list' ? t.task.title : view === 'create' ? (taskType === TASK_TYPE_EPIC ? t.task.newEpic : t.task.newTask) : t.task.taskDetail}
           </span>
           {view === 'list' && selectedProjectName && (
             <span style={{ fontSize: 10, color: '#6366f1' }}>{selectedProjectName}</span>
@@ -160,12 +194,20 @@ export function TaskPanel({ tasks, agents, squads, projects, selectedProjectId, 
       {/* ========== LIST VIEW ========== */}
       {view === 'list' && (
         <>
-          <button
-            onClick={() => setView('create')}
-            style={{ width: '100%', padding: '6px 10px', background: '#6366f1', border: 'none', borderRadius: 4, color: '#fff', fontSize: 11, fontWeight: 600, cursor: 'pointer', marginBottom: 8 }}
-          >
-            + {t.task.newTask}
-          </button>
+          <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
+            <button
+              onClick={() => openCreate(TASK_TYPE_TASK)}
+              style={{ flex: 1, padding: '6px 10px', background: '#6366f1', border: 'none', borderRadius: 4, color: '#fff', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}
+            >
+              + {t.task.newTask}
+            </button>
+            <button
+              onClick={() => openCreate(TASK_TYPE_EPIC)}
+              style={{ flex: 1, padding: '6px 10px', background: '#7c3aed', border: 'none', borderRadius: 4, color: '#fff', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}
+            >
+              + {t.task.newEpic}
+            </button>
+          </div>
 
           {filteredTasks.length === 0 && (
             <div style={{ textAlign: 'center', color: '#475569', fontSize: 12, padding: 20 }}>
@@ -177,7 +219,9 @@ export function TaskPanel({ tasks, agents, squads, projects, selectedProjectId, 
             const assignee = agents.find((a) => a.id === task.assigneeId);
             const squad = squads.find((s) => s.id === task.squadId);
             const project = projects.find((p) => p.id === task.projectId);
+            const epic = tasks.find((candidate) => candidate.id === task.epicId);
             const prioInfo = PRIORITY_OPTIONS.find((o) => o.value === task.priority);
+            const taskTypeValue = task.type ?? TASK_TYPE_TASK;
 
             return (
               <div
@@ -199,6 +243,9 @@ export function TaskPanel({ tasks, agents, squads, projects, selectedProjectId, 
                   <div style={{ fontSize: 11, fontWeight: 600, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {task.title}
                   </div>
+                  <span style={{ fontSize: 8, color: taskTypeValue === TASK_TYPE_EPIC ? '#c084fc' : '#38bdf8', border: `1px solid ${taskTypeValue === TASK_TYPE_EPIC ? '#c084fc40' : '#38bdf840'}`, padding: '1px 4px', borderRadius: 3, flexShrink: 0 }}>
+                    {taskTypeValue === TASK_TYPE_EPIC ? t.task.typeEpic : t.task.typeTask}
+                  </span>
                   {prioInfo && (
                     <span style={{ fontSize: 8, color: prioInfo.color, border: `1px solid ${prioInfo.color}40`, padding: '1px 4px', borderRadius: 3, flexShrink: 0 }}>
                       {prioInfo.label}
@@ -220,6 +267,11 @@ export function TaskPanel({ tasks, agents, squads, projects, selectedProjectId, 
                     {project && !selectedProjectId && (
                       <span style={{ fontSize: 8, color: '#6366f1', background: '#6366f120', padding: '1px 4px', borderRadius: 3 }}>
                         {project.name}
+                      </span>
+                    )}
+                    {epic && (
+                      <span style={{ fontSize: 8, color: '#c084fc', background: '#c084fc20', padding: '1px 4px', borderRadius: 3 }}>
+                        {epic.title}
                       </span>
                     )}
                     {squad && (
@@ -254,6 +306,18 @@ export function TaskPanel({ tasks, agents, squads, projects, selectedProjectId, 
             style={inputStyle}
             autoFocus
           />
+          <select
+            value={taskType}
+            onChange={(e) => {
+              const nextType = e.target.value;
+              setTaskType(nextType);
+              if (nextType === TASK_TYPE_EPIC) setEpicId('');
+            }}
+            style={{ ...inputStyle, cursor: 'pointer' }}
+          >
+            <option value={TASK_TYPE_TASK}>{t.task.typeTask}</option>
+            <option value={TASK_TYPE_EPIC}>{t.task.typeEpic}</option>
+          </select>
           <textarea
             value={desc}
             onChange={(e) => setDesc(e.target.value)}
@@ -261,6 +325,17 @@ export function TaskPanel({ tasks, agents, squads, projects, selectedProjectId, 
             rows={5}
             style={{ ...inputStyle, resize: 'vertical', fontFamily: 'inherit' }}
           />
+          <select
+            value={epicId}
+            onChange={(e) => setEpicId(e.target.value)}
+            disabled={taskType !== TASK_TYPE_TASK}
+            style={{ ...inputStyle, cursor: taskType === TASK_TYPE_TASK ? 'pointer' : 'not-allowed', opacity: taskType === TASK_TYPE_TASK ? 1 : 0.5 }}
+          >
+            <option value="">{t.task.noEpic}</option>
+            {availableEpics.map((epic) => (
+              <option key={epic.id} value={epic.id}>{epic.title}</option>
+            ))}
+          </select>
           <select
             value={effectiveProjectId}
             onChange={(e) => setProjectId(e.target.value)}
@@ -301,6 +376,24 @@ export function TaskPanel({ tasks, agents, squads, projects, selectedProjectId, 
               {/* Read-only detail */}
               <DetailSection label={t.task.labelTitle}>
                 <div style={{ fontSize: 13, fontWeight: 600 }}>{selectedTask.title}</div>
+              </DetailSection>
+
+              {(() => {
+                const selectedTaskType = selectedTask.type ?? TASK_TYPE_TASK;
+                return (
+              <DetailSection label={t.task.labelType}>
+                <span style={{ fontSize: 12, color: selectedTaskType === TASK_TYPE_EPIC ? '#c084fc' : '#38bdf8', fontWeight: 600 }}>
+                  {selectedTaskType === TASK_TYPE_EPIC ? t.task.typeEpic : t.task.typeTask}
+                </span>
+              </DetailSection>
+                );
+              })()}
+
+              <DetailSection label={t.task.labelEpic}>
+                {(() => {
+                  const epic = tasks.find((task) => task.id === selectedTask.epicId);
+                  return <span style={{ fontSize: 11, color: epic ? '#c084fc' : '#475569' }}>{epic?.title || t.task.noEpic}</span>;
+                })()}
               </DetailSection>
 
               <DetailSection label={t.task.labelStatus}>
@@ -346,16 +439,18 @@ export function TaskPanel({ tasks, agents, squads, projects, selectedProjectId, 
                 })()}
               </DetailSection>
 
-              <DetailSection label={t.task.labelProgress}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <div style={{ flex: 1, height: 4, background: '#1e293b', borderRadius: 2 }}>
-                    <div style={{ height: '100%', width: `${Math.min(100, selectedTask.estimatedTicks > 0 ? (selectedTask.elapsedTicks / selectedTask.estimatedTicks) * 100 : 0)}%`, background: '#3b82f6', borderRadius: 2 }} />
+              {(selectedTask.type ?? TASK_TYPE_TASK) === TASK_TYPE_TASK && (
+                <DetailSection label={t.task.labelProgress}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div style={{ flex: 1, height: 4, background: '#1e293b', borderRadius: 2 }}>
+                      <div style={{ height: '100%', width: `${Math.min(100, selectedTask.estimatedTicks > 0 ? (selectedTask.elapsedTicks / selectedTask.estimatedTicks) * 100 : 0)}%`, background: '#3b82f6', borderRadius: 2 }} />
+                    </div>
+                    <span style={{ fontSize: 10, color: '#64748b', flexShrink: 0 }}>
+                      {selectedTask.elapsedTicks}/{selectedTask.estimatedTicks} {t.task.ticks}
+                    </span>
                   </div>
-                  <span style={{ fontSize: 10, color: '#64748b', flexShrink: 0 }}>
-                    {selectedTask.elapsedTicks}/{selectedTask.estimatedTicks} {t.task.ticks}
-                  </span>
-                </div>
-              </DetailSection>
+                </DetailSection>
+              )}
 
               <DetailSection label={t.task.labelCreated}>
                 <span style={{ fontSize: 10, color: '#64748b' }}>
@@ -399,6 +494,20 @@ export function TaskPanel({ tasks, agents, squads, projects, selectedProjectId, 
                 style={inputStyle}
               />
 
+              <label style={{ fontSize: 10, color: '#94a3b8' }}>{t.task.labelType}</label>
+              <select
+                value={editType}
+                onChange={(e) => {
+                  const nextType = e.target.value;
+                  setEditType(nextType);
+                  if (nextType === TASK_TYPE_EPIC) setEditEpicId('');
+                }}
+                style={{ ...inputStyle, cursor: 'pointer' }}
+              >
+                <option value={TASK_TYPE_TASK}>{t.task.typeTask}</option>
+                <option value={TASK_TYPE_EPIC}>{t.task.typeEpic}</option>
+              </select>
+
               <label style={{ fontSize: 10, color: '#94a3b8' }}>{t.task.labelDescription}</label>
               <textarea
                 value={editDesc}
@@ -406,6 +515,25 @@ export function TaskPanel({ tasks, agents, squads, projects, selectedProjectId, 
                 rows={5}
                 style={{ ...inputStyle, resize: 'vertical', fontFamily: 'inherit' }}
               />
+
+              <label style={{ fontSize: 10, color: '#94a3b8' }}>{t.task.labelEpic}</label>
+              <select
+                value={editEpicId}
+                onChange={(e) => setEditEpicId(e.target.value)}
+                disabled={editType !== TASK_TYPE_TASK}
+                style={{ ...inputStyle, cursor: editType === TASK_TYPE_TASK ? 'pointer' : 'not-allowed', opacity: editType === TASK_TYPE_TASK ? 1 : 0.5 }}
+              >
+                <option value="">{t.task.noEpic}</option>
+                {tasks
+                  .filter((task) =>
+                    (task.type ?? TASK_TYPE_TASK) === TASK_TYPE_EPIC &&
+                    task.id !== selectedTaskId &&
+                    (!editProjectId || task.projectId === editProjectId),
+                  )
+                  .map((epic) => (
+                    <option key={epic.id} value={epic.id}>{epic.title}</option>
+                  ))}
+              </select>
 
               <label style={{ fontSize: 10, color: '#94a3b8' }}>{t.task.labelStatus}</label>
               <select

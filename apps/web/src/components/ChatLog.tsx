@@ -7,7 +7,7 @@ interface Props {
   messages: AgentMessage[];
   agents: Agent[];
   squads: Squad[];
-  onClear: () => void;
+  onClear: () => Promise<void>;
 }
 
 export function ChatLog({ messages, agents, squads, onClear }: Props) {
@@ -82,7 +82,9 @@ export function ChatLog({ messages, agents, squads, onClear }: Props) {
             label="Clear"
             title={t.chat.clearChat}
             active={false}
-            onClick={onClear}
+            onClick={() => {
+              void onClear();
+            }}
           />
         </div>
       </div>

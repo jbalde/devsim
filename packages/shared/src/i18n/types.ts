@@ -47,6 +47,7 @@ export interface Translations {
   task: {
     title: string;
     newTask: string;
+    newEpic: string;
     taskDetail: string;
     noTasksProject: string;
     noTasks: string;
@@ -54,6 +55,7 @@ export interface Translations {
     backToList: string;
     titlePlaceholder: string;
     descPlaceholder: string;
+    noEpic: string;
     noProject: string;
     noSquad: string;
     editing: string;
@@ -62,6 +64,8 @@ export interface Translations {
     ticks: string;
     // Labels
     labelTitle: string;
+    labelType: string;
+    labelEpic: string;
     labelStatus: string;
     labelPriority: string;
     labelDescription: string;
@@ -77,6 +81,8 @@ export interface Translations {
     statusInProgress: string;
     statusInReview: string;
     statusDone: string;
+    typeEpic: string;
+    typeTask: string;
     // Priority
     priorityLow: string;
     priorityMedium: string;
@@ -168,39 +174,42 @@ export interface Translations {
     folderOther: string;
   };
 
-  // --- Agent profiles ---
-  agents: {
-    productManager: { label: string; description: string };
-    projectManager: { label: string; description: string };
-    frontendDev: { label: string; description: string };
-    backendDev: { label: string; description: string };
-    fullstackDev: { label: string; description: string };
-    biAnalyst: { label: string; description: string };
-    securityEngineer: { label: string; description: string };
-    qaEngineer: { label: string; description: string };
-    devopsEngineer: { label: string; description: string };
-    uxDesigner: { label: string; description: string };
-  };
-
-  // --- Simulation chat lines ---
+  // --- Simulation chat lines and fallback copy ---
   sim: {
     working: string[];
     askingHelp: string[];
     reviewing: string[];
     managing: string[];
+    llmStartBlocked: string;
+    llmStartUsingProviders: string;
     idleAnnounce: string;
     assignTask: string;
     ackTask: string;
     finishTask: string;
     requestReview: string;
-    systemPrompt: string;
-    contextAssign: string;
-    contextAck: string;
-    contextWorkUpdate: string;
-    contextFinish: string;
-    contextReviewReq: string;
-    contextReviewReply: string;
-    contextIdle: string;
-    contextManaging: string;
+    // Context strings for PM/PjM prompts
+    ctxProjects: string;
+    ctxTeam: string;
+    ctxTasks: string;
+    ctxTasksInProgress: string;
+    ctxNoTasksIdleWorkers: string;
+    ctxUnassignedTasks: string;
+    ctxTasksInProgressCount: string;
+    ctxNoWorkersYet: string;
+    // Epic breakdown context
+    ctxEpicAnnounceContext: string;
+    ctxEpicAnnounceFallback: string;
+    epicFallbackScopeTitle: string;
+    epicFallbackScopeDesc: string;
+    epicFallbackValidationTitle: string;
+    epicFallbackValidationDesc: string;
+    epicFallbackMetricsTitle: string;
+    epicFallbackMetricsDesc: string;
+    // PM → PjM task proposal flow
+    pmProposalContext: string;
+    pmProposalFallback: string;
+    pmProposalAnnounce: string;
+    pjmCreatedTasks: string;
+    pjmCreatedTasksFallback: string;
   };
 }

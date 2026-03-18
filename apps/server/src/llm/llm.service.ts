@@ -8,6 +8,13 @@ interface ChatMessage {
   content: string;
 }
 
+interface ChatOptions {
+  /** Max tokens for the response (default: 150) */
+  maxTokens?: number;
+  /** Temperature (default: 0.8) */
+  temperature?: number;
+}
+
 @Injectable()
 export class LlmService {
   private providers = new Map<string, LlmProvider>();
@@ -29,6 +36,10 @@ export class LlmService {
 
   getAll(): LlmProvider[] {
     return Array.from(this.providers.values()).sort((a, b) => a.priority - b.priority);
+  }
+
+  getEnabled(): LlmProvider[] {
+    return this.getAll().filter((provider) => provider.enabled);
   }
 
   getById(id: string): LlmProvider | undefined {
@@ -96,11 +107,11 @@ export class LlmService {
 
   // --- Chat Completion with Fallback ---
 
-  async chatCompletion(messages: ChatMessage[]): Promise<string | null> {
-    const sorted = this.getAll().filter((p) => p.enabled);
+  async chatCompletion(messages: ChatMessage[], options?: ChatOptions): Promise<string | null> {
+    const sorted = this.getEnabled();
     for (const provider of sorted) {
       try {
-        const result = await this.callProvider(provider, messages);
+        const result = await this.callProvider(provider, messages, options);
         if (result) {
           // Mark as connected on success
           if (provider.status !== LlmProviderStatus.CONNECTED) {
@@ -120,12 +131,20 @@ export class LlmService {
     return null; // All providers failed — caller should use fallback
   }
 
-  private async callProvider(provider: LlmProvider, messages: ChatMessage[]): Promise<string | null> {
+  private async callProvider(
+    provider: LlmProvider,
+    messages: ChatMessage[],
+    options?: ChatOptions,
+  ): Promise<string | null> {
     const url = `${provider.baseUrl}/v1/chat/completions`;
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     if (provider.apiKey) {
       headers['Authorization'] = `Bearer ${provider.apiKey}`;
     }
+
+    const maxTokens = options?.maxTokens ?? 150;
+    const temperature = options?.temperature ?? 0.8;
+    const timeout = maxTokens > 300 ? 30000 : 10000;
 
     const res = await fetch(url, {
       method: 'POST',
@@ -133,10 +152,10 @@ export class LlmService {
       body: JSON.stringify({
         model: provider.model,
         messages,
-        max_tokens: 100,
-        temperature: 0.8,
+        max_tokens: maxTokens,
+        temperature,
       }),
-      signal: AbortSignal.timeout(10000),
+      signal: AbortSignal.timeout(timeout),
     });
 
     if (!res.ok) throw new Error(`Provider ${provider.name} returned ${res.status}`);
@@ -148,7 +167,7 @@ export class LlmService {
 
   /** Whether any enabled provider is available */
   hasProviders(): boolean {
-    return this.getAll().some((p) => p.enabled);
+    return this.getEnabled().length > 0;
   }
 
   /** Restore state from persistence */

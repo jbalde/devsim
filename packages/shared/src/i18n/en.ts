@@ -37,6 +37,7 @@ export const en: Translations = {
   task: {
     title: 'Tasks',
     newTask: 'New Task',
+    newEpic: 'New Epic',
     taskDetail: 'Task Detail',
     noTasksProject: 'No tasks in this project yet.',
     noTasks: 'No tasks yet.',
@@ -44,6 +45,7 @@ export const en: Translations = {
     backToList: 'Back to list',
     titlePlaceholder: 'Task title...',
     descPlaceholder: 'Description...\nExplain what needs to be done, acceptance criteria, etc.',
+    noEpic: 'No epic',
     noProject: 'No project',
     noSquad: 'No squad',
     editing: 'Editing',
@@ -51,6 +53,8 @@ export const en: Translations = {
     emptyDesc: '—',
     ticks: 'ticks',
     labelTitle: 'Title',
+    labelType: 'Type',
+    labelEpic: 'Epic',
     labelStatus: 'Status',
     labelPriority: 'Priority',
     labelDescription: 'Description',
@@ -65,6 +69,8 @@ export const en: Translations = {
     statusInProgress: 'In Progress',
     statusInReview: 'In Review',
     statusDone: 'Done',
+    typeEpic: 'Epic',
+    typeTask: 'Task',
     priorityLow: 'Low',
     priorityMedium: 'Medium',
     priorityHigh: 'High',
@@ -147,49 +153,6 @@ export const en: Translations = {
     folderOther: 'Other',
   },
 
-  agents: {
-    productManager: {
-      label: 'Product Manager',
-      description: 'Defines product vision, prioritizes features, and writes user stories.',
-    },
-    projectManager: {
-      label: 'Project Manager',
-      description: 'Coordinates tasks, manages timelines, and unblocks the team.',
-    },
-    frontendDev: {
-      label: 'Frontend Developer',
-      description: 'Builds user interfaces and client-side logic.',
-    },
-    backendDev: {
-      label: 'Backend Developer',
-      description: 'Builds APIs, services, and server-side logic.',
-    },
-    fullstackDev: {
-      label: 'Fullstack Developer',
-      description: 'Works across the entire stack.',
-    },
-    biAnalyst: {
-      label: 'BI Analyst',
-      description: 'Analyzes data, builds dashboards, and provides insights.',
-    },
-    securityEngineer: {
-      label: 'Security Engineer',
-      description: 'Reviews code for vulnerabilities and implements security measures.',
-    },
-    qaEngineer: {
-      label: 'QA Engineer',
-      description: 'Tests features, writes test plans, and reports bugs.',
-    },
-    devopsEngineer: {
-      label: 'DevOps Engineer',
-      description: 'Manages infrastructure, CI/CD pipelines, and deployments.',
-    },
-    uxDesigner: {
-      label: 'UX Designer',
-      description: 'Designs user flows, wireframes, and visual interfaces.',
-    },
-  },
-
   sim: {
     working: [
       'Making progress on this...',
@@ -214,21 +177,36 @@ export const en: Translations = {
       'How is everyone doing on their tasks?',
       "Let's make sure we hit the deadline.",
     ],
+    llmStartBlocked: 'Cannot start: enable at least one LLM provider first.',
+    llmStartUsingProviders: 'Starting LLM orchestration with provider priority: {{providers}}.',
     idleAnnounce: "I'm free — anyone need help?",
     assignTask: 'Hey {{worker}}, I\'m assigning "{{task}}" to you.',
     ackTask: 'Got it! I\'ll start working on "{{task}}" now.',
     finishTask: 'Finished "{{task}}"! Moving on.',
     requestReview: 'Hey {{reviewer}}, can you review "{{task}}"?',
-    systemPrompt:
-      'You are {{name}}, a {{role}} at a software company. {{description}}. Respond in 1 short sentence, in character. Do not use emojis.',
-    contextAssign: 'You are assigning the task "{{task}}" to {{worker}}. Tell them briefly.',
-    contextAck: 'Your manager just assigned you the task "{{task}}". Acknowledge briefly.',
-    contextWorkUpdate:
-      'You are working on "{{task}}" ({{elapsed}}/{{estimated}} ticks done). Share a brief work update.',
-    contextFinish: 'You just finished the task "{{task}}". Announce completion briefly.',
-    contextReviewReq: 'Ask {{reviewer}} to review your completed task "{{task}}".',
-    contextReviewReply: 'A colleague asks you to review "{{task}}". Give brief review feedback.',
-    contextIdle: 'You are idle with no task assigned. Briefly announce your availability to the team.',
-    contextManaging: 'You are checking on the team. Say something brief about project status.',
+    // Context strings for PM/PjM prompts
+    ctxProjects: 'Projects: {{list}}.',
+    ctxTeam: 'Team: {{total}} workers ({{busy}} busy, {{idle}} idle).',
+    ctxTasks: 'Tasks: {{pending}} pending, {{done}} completed.',
+    ctxTasksInProgress: 'Tasks in progress: {{sample}}.',
+    ctxNoTasksIdleWorkers: 'There are no pending tasks and there are idle people. Suggest creating new tasks or epics.',
+    ctxUnassignedTasks: 'There are {{count}} unassigned tasks.',
+    ctxTasksInProgressCount: '{{count}} tasks in progress.',
+    ctxNoWorkersYet: 'There are no workers available on the team yet.',
+    // Epic breakdown context
+    ctxEpicAnnounceContext: 'You analyzed the epic "{{epic}}" and proposed {{count}} product tasks. Announce it briefly to the team.',
+    ctxEpicAnnounceFallback: 'I broke down the epic "{{epic}}" into {{count}} product task options.',
+    epicFallbackScopeTitle: 'Define product scope for {{epic}}',
+    epicFallbackScopeDesc: 'Define the functional scope, value proposition and main acceptance criteria for the epic "{{epic}}".',
+    epicFallbackValidationTitle: 'Design user validation for {{epic}}',
+    epicFallbackValidationDesc: 'Define hypotheses, expected feedback and success signals to validate the epic "{{epic}}" from a product perspective.',
+    epicFallbackMetricsTitle: 'Define metrics and rollout for {{epic}}',
+    epicFallbackMetricsDesc: 'Specify metrics, launch risks and follow-up plan for the epic "{{epic}}".',
+    // PM → PjM task proposal flow
+    pmProposalContext: 'You analyzed the team status and propose {{count}} new tasks. Announce your proposal to the Project Manager.',
+    pmProposalFallback: 'I analyzed the backlog and propose {{count}} new tasks for the team.',
+    pmProposalAnnounce: 'I propose these tasks: {{tasks}}. Can you add them to the backlog?',
+    pjmCreatedTasks: 'You received task proposals from the Product Manager and created {{count}} new tasks in the backlog. Confirm briefly.',
+    pjmCreatedTasksFallback: 'Done, I created {{count}} tasks in the backlog based on the PM proposal.',
   },
 };

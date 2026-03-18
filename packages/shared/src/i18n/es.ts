@@ -37,6 +37,7 @@ export const es: Translations = {
   task: {
     title: 'Tareas',
     newTask: 'Nueva Tarea',
+    newEpic: 'Nueva Épica',
     taskDetail: 'Detalle de Tarea',
     noTasksProject: 'No hay tareas en este proyecto todavía.',
     noTasks: 'No hay tareas todavía.',
@@ -44,6 +45,7 @@ export const es: Translations = {
     backToList: 'Volver a la lista',
     titlePlaceholder: 'Título de la tarea...',
     descPlaceholder: 'Descripción...\nExplica qué hay que hacer, criterios de aceptación, etc.',
+    noEpic: 'Sin épica',
     noProject: 'Sin proyecto',
     noSquad: 'Sin squad',
     editing: 'Editando',
@@ -51,6 +53,8 @@ export const es: Translations = {
     emptyDesc: '—',
     ticks: 'ticks',
     labelTitle: 'Título',
+    labelType: 'Tipo',
+    labelEpic: 'Épica',
     labelStatus: 'Estado',
     labelPriority: 'Prioridad',
     labelDescription: 'Descripción',
@@ -65,6 +69,8 @@ export const es: Translations = {
     statusInProgress: 'En progreso',
     statusInReview: 'En revisión',
     statusDone: 'Hecho',
+    typeEpic: 'Épica',
+    typeTask: 'Tarea',
     priorityLow: 'Baja',
     priorityMedium: 'Media',
     priorityHigh: 'Alta',
@@ -147,49 +153,6 @@ export const es: Translations = {
     folderOther: 'Otro',
   },
 
-  agents: {
-    productManager: {
-      label: 'Product Manager',
-      description: 'Define la visión del producto, prioriza funcionalidades y escribe historias de usuario.',
-    },
-    projectManager: {
-      label: 'Project Manager',
-      description: 'Coordina tareas, gestiona plazos y desbloquea al equipo.',
-    },
-    frontendDev: {
-      label: 'Desarrollador Frontend',
-      description: 'Construye interfaces de usuario y lógica del lado del cliente.',
-    },
-    backendDev: {
-      label: 'Desarrollador Backend',
-      description: 'Construye APIs, servicios y lógica del lado del servidor.',
-    },
-    fullstackDev: {
-      label: 'Desarrollador Fullstack',
-      description: 'Trabaja en todo el stack tecnológico.',
-    },
-    biAnalyst: {
-      label: 'Analista BI',
-      description: 'Analiza datos, construye dashboards y proporciona insights.',
-    },
-    securityEngineer: {
-      label: 'Ingeniero de Seguridad',
-      description: 'Revisa código en busca de vulnerabilidades e implementa medidas de seguridad.',
-    },
-    qaEngineer: {
-      label: 'Ingeniero QA',
-      description: 'Prueba funcionalidades, escribe planes de test y reporta bugs.',
-    },
-    devopsEngineer: {
-      label: 'Ingeniero DevOps',
-      description: 'Gestiona infraestructura, pipelines CI/CD y despliegues.',
-    },
-    uxDesigner: {
-      label: 'Diseñador UX',
-      description: 'Diseña flujos de usuario, wireframes e interfaces visuales.',
-    },
-  },
-
   sim: {
     working: [
       'Avanzando con esto...',
@@ -214,21 +177,36 @@ export const es: Translations = {
       '¿Cómo van todos con sus tareas?',
       'Asegurémonos de cumplir el deadline.',
     ],
+    llmStartBlocked: 'No se puede iniciar: habilita antes al menos un proveedor LLM.',
+    llmStartUsingProviders: 'Iniciando la orquestación con este orden de prioridad de proveedores: {{providers}}.',
     idleAnnounce: 'Estoy libre — ¿alguien necesita ayuda?',
     assignTask: 'Oye {{worker}}, te asigno "{{task}}".',
     ackTask: '¡Entendido! Voy a empezar con "{{task}}" ahora.',
     finishTask: '¡Terminé "{{task}}"! Siguiente tarea.',
     requestReview: 'Oye {{reviewer}}, ¿puedes revisar "{{task}}"?',
-    systemPrompt:
-      'Eres {{name}}, un/a {{role}} en una empresa de software. {{description}}. Responde en 1 oración corta, en personaje. No uses emojis. Responde en español.',
-    contextAssign: 'Estás asignando la tarea "{{task}}" a {{worker}}. Díselo brevemente.',
-    contextAck: 'Tu manager te acaba de asignar la tarea "{{task}}". Confírmalo brevemente.',
-    contextWorkUpdate:
-      'Estás trabajando en "{{task}}" ({{elapsed}}/{{estimated}} ticks completados). Comparte una breve actualización.',
-    contextFinish: 'Acabas de terminar la tarea "{{task}}". Anuncia que la completaste brevemente.',
-    contextReviewReq: 'Pide a {{reviewer}} que revise tu tarea completada "{{task}}".',
-    contextReviewReply: 'Un colega te pide que revises "{{task}}". Da un feedback breve de revisión.',
-    contextIdle: 'Estás sin tareas asignadas. Anuncia brevemente tu disponibilidad al equipo.',
-    contextManaging: 'Estás revisando el estado del equipo. Di algo breve sobre el progreso del proyecto.',
+    // Context strings for PM/PjM prompts
+    ctxProjects: 'Proyectos: {{list}}.',
+    ctxTeam: 'Equipo: {{total}} workers ({{busy}} ocupados, {{idle}} libres).',
+    ctxTasks: 'Tareas: {{pending}} pendientes, {{done}} completadas.',
+    ctxTasksInProgress: 'Tareas en curso: {{sample}}.',
+    ctxNoTasksIdleWorkers: 'No hay tareas pendientes y hay gente libre. Sugiere crear tareas o épicas nuevas.',
+    ctxUnassignedTasks: 'Hay {{count}} tareas sin asignar.',
+    ctxTasksInProgressCount: '{{count}} tareas en progreso.',
+    ctxNoWorkersYet: 'No hay workers disponibles en el equipo todavía.',
+    // Epic breakdown context
+    ctxEpicAnnounceContext: 'Has analizado la épica "{{epic}}" y has propuesto {{count}} tareas de producto. Anúncialo brevemente al equipo.',
+    ctxEpicAnnounceFallback: 'He desglosado la épica "{{epic}}" en {{count}} opciones de tareas de producto.',
+    epicFallbackScopeTitle: 'Definir alcance de producto para {{epic}}',
+    epicFallbackScopeDesc: 'Aterrizar el alcance funcional, la propuesta de valor y los criterios de aceptación principales para la épica "{{epic}}".',
+    epicFallbackValidationTitle: 'Diseñar validación de usuario para {{epic}}',
+    epicFallbackValidationDesc: 'Plantear hipótesis, feedback esperado y señales de éxito para validar desde producto la épica "{{epic}}".',
+    epicFallbackMetricsTitle: 'Definir métricas y rollout de {{epic}}',
+    epicFallbackMetricsDesc: 'Especificar métricas, riesgos de lanzamiento y plan de seguimiento para la épica "{{epic}}".',
+    // PM → PjM task proposal flow
+    pmProposalContext: 'Has analizado el estado del equipo y propones {{count}} nuevas tareas. Anuncia tu propuesta al Project Manager.',
+    pmProposalFallback: 'He analizado el backlog y propongo {{count}} tareas nuevas para el equipo.',
+    pmProposalAnnounce: 'Propongo estas tareas: {{tasks}}. ¿Puedes crearlas en el backlog?',
+    pjmCreatedTasks: 'Has recibido propuestas de tareas del Product Manager y has creado {{count}} tareas nuevas en el backlog. Confirma brevemente.',
+    pjmCreatedTasksFallback: 'Perfecto, he creado {{count}} tareas en el backlog según la propuesta del PM.',
   },
 };

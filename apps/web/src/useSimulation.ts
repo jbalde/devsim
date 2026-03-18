@@ -63,6 +63,7 @@ export function useSimulation() {
     socket.on(WsEvent.MESSAGE_SENT, (m: AgentMessage) =>
       setMessages((prev) => [...prev.slice(-99), m]),
     );
+    socket.on(WsEvent.MESSAGES_CLEARED, () => setMessages([]));
 
     socket.on(WsEvent.SQUAD_CREATED, (sq: Squad) =>
       setSquads((prev) => [...prev, sq]),
@@ -103,6 +104,7 @@ export function useSimulation() {
       socket.off(WsEvent.TASK_UPDATED);
       socket.off(WsEvent.TASK_DELETED);
       socket.off(WsEvent.MESSAGE_SENT);
+      socket.off(WsEvent.MESSAGES_CLEARED);
       socket.off(WsEvent.SQUAD_CREATED);
       socket.off(WsEvent.SQUAD_UPDATED);
       socket.off(WsEvent.SQUAD_DELETED);
@@ -118,11 +120,11 @@ export function useSimulation() {
   const toggleSimulation = useCallback(async () => {
     if (running) {
       await api.stopSimulation();
-      setRunning(false);
     } else {
       await api.startSimulation();
-      setRunning(true);
     }
+    const status = await api.getSimulationStatus();
+    setRunning((status as { running: boolean }).running);
   }, [running]);
 
   const addToSquad = useCallback(async (agentId: string, squadId: string) => {
@@ -190,8 +192,10 @@ export function useSimulation() {
     await api.removeSquadMember(squadId, agentId);
   }, []);
 
-  const clearMessages = useCallback(() => {
+  const clearMessages = useCallback(async () => {
     setMessages([]);
+    await api.clearMessages();
+    await api.saveState();
   }, []);
 
   const deleteTask = useCallback(async (id: string) => {

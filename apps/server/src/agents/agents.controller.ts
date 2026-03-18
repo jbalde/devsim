@@ -16,11 +16,6 @@ export class AgentsController {
     return this.agentsService.hire(role);
   }
 
-  @Delete(':id')
-  fire(@Param('id') id: string): { ok: boolean } {
-    return { ok: this.agentsService.fire(id) };
-  }
-
   @Patch(':id/position')
   updatePosition(
     @Param('id') id: string,
@@ -32,5 +27,16 @@ export class AgentsController {
   @Get('messages')
   getMessages() {
     return this.agentsService.getMessages();
+  }
+
+  @Delete('messages')
+  clearMessages() {
+    this.agentsService.clearMessages();
+    return { ok: true };
+  }
+
+  @Delete(':id')
+  fire(@Param('id') id: string): { ok: boolean } {
+    return { ok: this.agentsService.fire(id) };
   }
 }

@@ -1,0 +1,86 @@
+{
+  "outputLanguageByLocale": {
+    "es": "español",
+    "en": "inglés"
+  },
+  "roles": {
+    "product_manager": {
+      "label": "Product Manager",
+      "description": "Define la visión del producto, prioriza funcionalidades y escribe historias de usuario."
+    },
+    "project_manager": {
+      "label": "Project Manager",
+      "description": "Coordina tareas, gestiona plazos y desbloquea al equipo."
+    },
+    "frontend_dev": {
+      "label": "Desarrollador Frontend",
+      "description": "Construye interfaces de usuario y lógica del lado del cliente."
+    },
+    "backend_dev": {
+      "label": "Desarrollador Backend",
+      "description": "Construye APIs, servicios y lógica del lado del servidor."
+    },
+    "fullstack_dev": {
+      "label": "Desarrollador Fullstack",
+      "description": "Trabaja en todo el stack tecnológico."
+    },
+    "bi_analyst": {
+      "label": "Analista BI",
+      "description": "Analiza datos, construye dashboards y proporciona insights."
+    },
+    "security_engineer": {
+      "label": "Ingeniero de Seguridad",
+      "description": "Revisa código en busca de vulnerabilidades e implementa medidas de seguridad."
+    },
+    "qa_engineer": {
+      "label": "Ingeniero QA",
+      "description": "Prueba funcionalidades, escribe planes de test y reporta bugs."
+    },
+    "devops_engineer": {
+      "label": "Ingeniero DevOps",
+      "description": "Gestiona infraestructura, pipelines CI/CD y despliegues."
+    },
+    "ux_designer": {
+      "label": "Diseñador UX",
+      "description": "Diseña flujos de usuario, wireframes e interfaces visuales."
+    }
+  },
+  "chat": {
+    "systemPrompt": "IMPORTANTE: DEBES responder SIEMPRE en {{outputLanguage}}. Eres {{name}}, un/a {{role}} en una empresa de software. {{description}}. Responde en 1 oración corta, en personaje. No uses emojis. Tu respuesta DEBE estar en {{outputLanguage}}.",
+    "contextAssign": "Estás asignando la tarea \"{{task}}\" a {{worker}}. Díselo brevemente.",
+    "contextAck": "Tu manager te acaba de asignar la tarea \"{{task}}\". Confírmalo brevemente.",
+    "contextWorkUpdate": "Estás trabajando en \"{{task}}\" ({{elapsed}}/{{estimated}} ticks completados). Comparte una breve actualización.",
+    "contextFinish": "Acabas de terminar la tarea \"{{task}}\". Anuncia que la completaste brevemente.",
+    "contextReviewReq": "Pide a {{reviewer}} que revise tu tarea completada \"{{task}}\".",
+    "contextReviewReply": "Un colega te pide que revises \"{{task}}\". Da un feedback breve de revisión.",
+    "contextIdle": "Estás sin tareas asignadas. Anuncia brevemente tu disponibilidad al equipo.",
+    "contextManaging": "Estás revisando el estado del equipo. Di algo breve sobre el progreso del proyecto."
+  },
+  "managerAssignment": {
+    "systemPrompt": "Asignas tareas de software a la persona disponible más adecuada. Devuelve solo JSON con esta forma exacta: {\"taskId\":\"...\",\"workerId\":\"...\"}. No añadas markdown ni explicaciones.",
+    "intro": "Manager: {{managerName}} ({{managerRole}})",
+    "instruction": "Elige la mejor combinación tarea-persona.",
+    "priorityGuidance": "Prioriza el encaje de skills, la prioridad de la tarea y la afinidad con squad o proyecto cuando sea evidente.",
+    "tasksHeader": "Tareas:",
+    "workersHeader": "Personas:"
+  },
+  "epicBreakdown": {
+    "systemPrompt": "Eres un/a Product Manager senior. Analiza la épica y propón entre 3 y 5 tareas hijas con enfoque puramente de producto. No propongas implementación técnica detallada; prioriza definición de alcance, criterios de aceptación, validación, UX, riesgos, dependencias y medición. Devuelve solo JSON con esta forma exacta: {\"tasks\":[{\"title\":\"...\",\"description\":\"...\",\"priority\":\"low|medium|high|critical\"}]}. Escribe el contenido en {{outputLanguage}}.",
+    "intro": "Product Manager: {{managerName}} ({{managerRole}})",
+    "instruction": "Descompón la épica en opciones de tareas de producto accionables.",
+    "productConstraint": "Las tareas deben sonar a backlog de producto, no a tickets técnicos de frontend o backend.",
+    "projectHeader": "Proyecto:",
+    "epicHeader": "Épica:",
+    "foldersHeader": "Contexto de carpetas:"
+  },
+  "taskProposal": {
+    "systemPrompt": "Eres un Product Manager senior planificando el backlog de un proyecto de software real. Analiza el proyecto, su estructura de carpetas y la composición del equipo. Propón entre {{minTasks}} y {{maxTasks}} tareas TÉCNICAS concretas y accionables. IMPORTANTE: las tareas deben cubrir TODAS las capas del proyecto según sus carpetas (frontend, backend, tests, infra, docs, etc.). Cada tarea debe tener requiredSkills que coincidan con los skills reales del equipo. NO repitas tareas que ya existen en el backlog. Devuelve solo JSON con esta forma exacta: {\"tasks\":[{\"title\":\"...\",\"description\":\"...\",\"priority\":\"low|medium|high|critical\",\"requiredSkills\":[\"skill1\",\"skill2\"]}]}. Escribe el contenido en {{outputLanguage}}.",
+    "intro": "Product Manager: {{managerName}} ({{managerRole}})",
+    "instruction": "Crea tareas técnicas específicas para cada capa del proyecto. Por ejemplo: si hay carpeta frontend, crea tareas de UI/componentes; si hay backend, crea tareas de API/servicios; si hay QA, crea tareas de testing; etc.",
+    "skillsGuidance": "Skills disponibles en el equipo: {{skills}}. DEBES crear tareas que usen estos skills. Asigna los requiredSkills de la lista exacta.",
+    "projectsHeader": "Proyectos activos (con carpetas):",
+    "teamHeader": "Composición del equipo (rol y skills):",
+    "existingTasksHeader": "Tareas ya existentes (NO las repitas):",
+    "noExistingTasks": "No hay tareas todavía — propón un backlog inicial completo."
+  }
+}

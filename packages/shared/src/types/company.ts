@@ -16,6 +16,7 @@ export const WsEvent = {
   TASK_UPDATED: 'task:updated',
   TASK_DELETED: 'task:deleted',
   MESSAGE_SENT: 'message:sent',
+  MESSAGES_CLEARED: 'messages:cleared',
   TICK: 'simulation:tick',
   COMPANY_UPDATED: 'company:updated',
   SQUAD_CREATED: 'squad:created',
