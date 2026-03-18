@@ -1,5 +1,6 @@
 import { useRef, useState, useEffect } from 'react';
 import { Squad, Agent, AGENT_PROFILES } from '@devsim/shared';
+import { useI18n } from '../i18n';
 
 interface Props {
   squad: Squad;
@@ -11,6 +12,7 @@ interface Props {
 }
 
 export function SquadTable({ squad, members, pan, onMoveSquad, onDeleteSquad, onRemoveMember }: Props) {
+  const { t } = useI18n();
   const [dragging, setDragging] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   // Local drag offset so movement is instant (no server round-trip)
@@ -131,7 +133,7 @@ export function SquadTable({ squad, members, pan, onMoveSquad, onDeleteSquad, on
             </span>
           </div>
           <span data-squad-header="true" style={{ fontSize: 10, color: '#94a3b8' }}>
-            {members.length} {members.length === 1 ? 'member' : 'members'}
+            {members.length} {members.length === 1 ? t.squad.member : t.squad.members}
           </span>
         </div>
 
@@ -176,7 +178,7 @@ export function SquadTable({ squad, members, pan, onMoveSquad, onDeleteSquad, on
               padding: 4,
             }}
           >
-            Right-click agent to add
+            {t.squad.addHint}
           </div>
         </div>
       </div>
@@ -201,7 +203,7 @@ export function SquadTable({ squad, members, pan, onMoveSquad, onDeleteSquad, on
           {members.length > 0 && (
             <>
               <div style={{ padding: '4px 8px', fontSize: 9, color: '#475569', textTransform: 'uppercase', fontWeight: 600 }}>
-                Remove member
+                {t.squad.removeMember}
               </div>
               {members.map((agent) => (
                 <div
@@ -223,7 +225,7 @@ export function SquadTable({ squad, members, pan, onMoveSquad, onDeleteSquad, on
             onMouseEnter={(e) => (e.currentTarget.style.background = '#334155')}
             onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
           >
-            Delete Squad
+            {t.squad.deleteSquad}
           </div>
         </div>
       )}

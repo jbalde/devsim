@@ -123,4 +123,13 @@ export class AgentsService {
       timestamp: Date.now(),
     });
   }
+
+  /** Restore state from persistence */
+  restore(agents: Agent[], messages: AgentMessage[]) {
+    this.agents.clear();
+    for (const a of agents) {
+      this.agents.set(a.id, a);
+    }
+    this.messages = messages;
+  }
 }

@@ -23,8 +23,12 @@ export const api = {
   getMessages: () => request('/agents/messages'),
 
   getTasks: () => request('/tasks'),
-  createTask: (data: { title: string; description: string; requiredSkills?: string[]; estimatedTicks?: number }) =>
+  createTask: (data: { title: string; description: string; projectId?: string; squadId?: string; requiredSkills?: string[]; estimatedTicks?: number }) =>
     request('/tasks', { method: 'POST', body: JSON.stringify(data) }),
+  updateTask: (id: string, data: Record<string, unknown>) =>
+    request(`/tasks/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteTask: (id: string) =>
+    request(`/tasks/${id}`, { method: 'DELETE' }),
 
   getSquads: () => request('/squads'),
   createSquad: (data: { name: string; position?: { x: number; y: number } }) =>
@@ -41,4 +45,28 @@ export const api = {
   startSimulation: () => request('/simulation/start', { method: 'POST' }),
   stopSimulation: () => request('/simulation/stop', { method: 'POST' }),
   getSimulationStatus: () => request<{ running: boolean }>('/simulation/status'),
+  setLocale: (locale: string) =>
+    request('/simulation/locale', { method: 'POST', body: JSON.stringify({ locale }) }),
+
+  getLlmProviders: () => request('/llm/providers'),
+  createLlmProvider: (data: Record<string, unknown>) =>
+    request('/llm/providers', { method: 'POST', body: JSON.stringify(data) }),
+  updateLlmProvider: (id: string, data: Record<string, unknown>) =>
+    request(`/llm/providers/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteLlmProvider: (id: string) =>
+    request(`/llm/providers/${id}`, { method: 'DELETE' }),
+  reorderLlmProviders: (ids: string[]) =>
+    request('/llm/providers/reorder', { method: 'POST', body: JSON.stringify({ ids }) }),
+  checkLlmProviderHealth: (id: string) =>
+    request(`/llm/providers/${id}/health`, { method: 'POST' }),
+  checkAllLlmHealth: () =>
+    request('/llm/providers/health', { method: 'POST' }),
+
+  getProjects: () => request('/projects'),
+  createProject: (data: { name: string; description: string; folders?: { label: string; path: string; type: string }[] }) =>
+    request('/projects', { method: 'POST', body: JSON.stringify(data) }),
+  updateProject: (id: string, data: Record<string, unknown>) =>
+    request(`/projects/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteProject: (id: string) =>
+    request(`/projects/${id}`, { method: 'DELETE' }),
 };

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Agent, AgentMessage, Task, Company, Squad, WsEvent } from '@devsim/shared';
+import { Agent, AgentMessage, Task, Company, Squad, LlmProvider, Project, WsEvent } from '@devsim/shared';
 import { socket } from './socket';
 import { api } from './api';
 
@@ -9,6 +9,8 @@ export function useSimulation() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [squads, setSquads] = useState<Squad[]>([]);
   const [messages, setMessages] = useState<AgentMessage[]>([]);
+  const [providers, setProviders] = useState<LlmProvider[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [running, setRunning] = useState(false);
 
   // Initial load
@@ -20,13 +22,17 @@ export function useSimulation() {
       api.getMessages(),
       api.getSimulationStatus(),
       api.getSquads(),
-    ]).then(([c, a, t, m, s, sq]) => {
+      api.getLlmProviders(),
+      api.getProjects(),
+    ]).then(([c, a, t, m, s, sq, lp, pr]) => {
       setCompany(c as Company);
       setAgents(a as Agent[]);
       setTasks(t as Task[]);
       setMessages(m as AgentMessage[]);
       setRunning((s as { running: boolean }).running);
       setSquads(sq as Squad[]);
+      setProviders(lp as LlmProvider[]);
+      setProjects(pr as Project[]);
     });
   }, []);
 
@@ -50,6 +56,9 @@ export function useSimulation() {
     socket.on(WsEvent.TASK_UPDATED, (t: Task) =>
       setTasks((prev) => prev.map((x) => (x.id === t.id ? t : x))),
     );
+    socket.on(WsEvent.TASK_DELETED, ({ id }: { id: string }) =>
+      setTasks((prev) => prev.filter((x) => x.id !== id)),
+    );
 
     socket.on(WsEvent.MESSAGE_SENT, (m: AgentMessage) =>
       setMessages((prev) => [...prev.slice(-99), m]),
@@ -65,6 +74,26 @@ export function useSimulation() {
       setSquads((prev) => prev.filter((x) => x.id !== id)),
     );
 
+    socket.on(WsEvent.LLM_PROVIDER_CREATED, (p: LlmProvider) =>
+      setProviders((prev) => [...prev, p]),
+    );
+    socket.on(WsEvent.LLM_PROVIDER_UPDATED, (p: LlmProvider) =>
+      setProviders((prev) => prev.map((x) => (x.id === p.id ? p : x))),
+    );
+    socket.on(WsEvent.LLM_PROVIDER_DELETED, ({ id }: { id: string }) =>
+      setProviders((prev) => prev.filter((x) => x.id !== id)),
+    );
+
+    socket.on(WsEvent.PROJECT_CREATED, (p: Project) =>
+      setProjects((prev) => [...prev, p]),
+    );
+    socket.on(WsEvent.PROJECT_UPDATED, (p: Project) =>
+      setProjects((prev) => prev.map((x) => (x.id === p.id ? p : x))),
+    );
+    socket.on(WsEvent.PROJECT_DELETED, ({ id }: { id: string }) =>
+      setProjects((prev) => prev.filter((x) => x.id !== id)),
+    );
+
     return () => {
       socket.off(WsEvent.COMPANY_UPDATED);
       socket.off(WsEvent.AGENT_HIRED);
@@ -72,10 +101,17 @@ export function useSimulation() {
       socket.off(WsEvent.AGENT_FIRED);
       socket.off(WsEvent.TASK_CREATED);
       socket.off(WsEvent.TASK_UPDATED);
+      socket.off(WsEvent.TASK_DELETED);
       socket.off(WsEvent.MESSAGE_SENT);
       socket.off(WsEvent.SQUAD_CREATED);
       socket.off(WsEvent.SQUAD_UPDATED);
       socket.off(WsEvent.SQUAD_DELETED);
+      socket.off(WsEvent.LLM_PROVIDER_CREATED);
+      socket.off(WsEvent.LLM_PROVIDER_UPDATED);
+      socket.off(WsEvent.LLM_PROVIDER_DELETED);
+      socket.off(WsEvent.PROJECT_CREATED);
+      socket.off(WsEvent.PROJECT_UPDATED);
+      socket.off(WsEvent.PROJECT_DELETED);
     };
   }, []);
 
@@ -90,7 +126,6 @@ export function useSimulation() {
   }, [running]);
 
   const addToSquad = useCallback(async (agentId: string, squadId: string) => {
-    // Optimistic update: move agent into squad immediately
     setSquads((prev) =>
       prev.map((s) => {
         if (s.id === squadId && !s.memberIds.includes(agentId)) {
@@ -112,6 +147,37 @@ export function useSimulation() {
     await api.updateSquad(squadId, { position: { x, y } });
   }, []);
 
+  /** Re-fetch all state from the server */
+  const refresh = useCallback(async () => {
+    const [c, a, t, m, sq, lp, pr] = await Promise.all([
+      api.getCompany(),
+      api.getAgents(),
+      api.getTasks(),
+      api.getMessages(),
+      api.getSquads(),
+      api.getLlmProviders(),
+      api.getProjects(),
+    ]);
+    setCompany(c as Company);
+    setAgents(a as Agent[]);
+    setTasks(t as Task[]);
+    setMessages(m as AgentMessage[]);
+    setSquads(sq as Squad[]);
+    setProviders(lp as LlmProvider[]);
+    setProjects(pr as Project[]);
+  }, []);
+
+  const refreshProviders = useCallback(async () => {
+    const lp = await api.getLlmProviders();
+    setProviders(lp as LlmProvider[]);
+  }, []);
+
+  const createSquad = useCallback(async (name: string) => {
+    await api.createSquad({ name });
+    const sq = await api.getSquads();
+    setSquads(sq as Squad[]);
+  }, []);
+
   const removeFromSquad = useCallback(async (squadId: string, agentId: string) => {
     setSquads((prev) =>
       prev.map((s) => {
@@ -124,5 +190,27 @@ export function useSimulation() {
     await api.removeSquadMember(squadId, agentId);
   }, []);
 
-  return { company, agents, tasks, squads, messages, running, toggleSimulation, addToSquad, removeFromSquad, moveSquad };
+  const clearMessages = useCallback(() => {
+    setMessages([]);
+  }, []);
+
+  const deleteTask = useCallback(async (id: string) => {
+    // Optimistic: remove immediately
+    setTasks((prev) => prev.filter((t) => t.id !== id));
+    await api.deleteTask(id);
+  }, []);
+
+  const updateTask = useCallback(async (id: string, data: Record<string, unknown>) => {
+    // Optimistic: update immediately
+    setTasks((prev) =>
+      prev.map((t) => (t.id === id ? { ...t, ...data } as Task : t)),
+    );
+    await api.updateTask(id, data);
+  }, []);
+
+  return {
+    company, agents, tasks, squads, messages, providers, projects, running,
+    toggleSimulation, addToSquad, removeFromSquad, moveSquad,
+    refreshProviders, refresh, createSquad, deleteTask, updateTask, clearMessages,
+  };
 }

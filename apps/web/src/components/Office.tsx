@@ -1,6 +1,7 @@
 import { useRef, useState, useCallback } from 'react';
 import { Agent, Task, Squad, AgentStatus, AGENT_PROFILES } from '@devsim/shared';
 import { SquadTable } from './SquadTable';
+import { useI18n } from '../i18n';
 
 interface Props {
   agents: Agent[];
@@ -25,6 +26,7 @@ export function Office({
   onAddToSquad,
   onRemoveFromSquad,
 }: Props) {
+  const { t } = useI18n();
   const containerRef = useRef<HTMLDivElement>(null);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState(false);
@@ -103,7 +105,7 @@ export function Office({
             pointerEvents: 'none',
           }}
         >
-          Hire agents and create squads to populate the office
+          {t.office.emptyState}
         </div>
       )}
 
@@ -168,6 +170,7 @@ function AgentDesk({
   onMove: (x: number, y: number) => void;
   onAddToSquad: (squadId: string) => void;
 }) {
+  const { t } = useI18n();
   const profile = AGENT_PROFILES[agent.role];
   const deskRef = useRef<HTMLDivElement>(null);
   const [dragging, setDragging] = useState(false);
@@ -318,7 +321,7 @@ function AgentDesk({
           {squads.length > 0 && (
             <>
               <div style={{ padding: '4px 8px', fontSize: 9, color: '#475569', textTransform: 'uppercase', fontWeight: 600 }}>
-                Add to squad
+                {t.office.addToSquad}
               </div>
               {squads.map((squad) => (
                 <MenuItem
@@ -334,7 +337,7 @@ function AgentDesk({
               <div style={{ borderTop: '1px solid #334155', margin: '4px 0' }} />
             </>
           )}
-          <MenuItem label="Fire" color="#ef4444" onClick={() => { onFire(); setShowMenu(false); }} />
+          <MenuItem label={t.office.fire} color="#ef4444" onClick={() => { onFire(); setShowMenu(false); }} />
         </div>
       )}
     </div>

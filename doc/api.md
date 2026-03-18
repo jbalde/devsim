@@ -71,6 +71,8 @@ Create a new task.
 {
   "title": "Build login page",
   "description": "Implement auth UI with email/password",
+  "projectId": "optional-project-id",
+  "squadId": "optional-squad-id",
   "requiredSkills": ["react", "auth"],
   "estimatedTicks": 5
 }
@@ -78,6 +80,9 @@ Create a new task.
 
 ### PATCH /tasks/:id
 Update a task.
+
+### DELETE /tasks/:id
+Delete a task.
 
 ---
 
@@ -126,6 +131,87 @@ Pause the simulation.
 ### GET /simulation/status
 Returns `{ "running": true|false }`.
 
+### GET /simulation/locale
+Returns the active locale used by the simulation.
+
+### POST /simulation/locale
+Set the active locale.
+
+**Body:**
+```json
+{ "locale": "en" }
+```
+
+---
+
+## LLM Providers
+
+### GET /llm/providers
+List all configured providers.
+
+### POST /llm/providers
+Create a provider.
+
+**Body:**
+```json
+{
+  "name": "Local Ollama",
+  "type": "ollama",
+  "baseUrl": "http://localhost:11434",
+  "model": "llama3.1",
+  "priority": 0,
+  "enabled": true
+}
+```
+
+### PATCH /llm/providers/:id
+Update a provider.
+
+### DELETE /llm/providers/:id
+Delete a provider.
+
+### POST /llm/providers/reorder
+Reorder providers by priority.
+
+**Body:**
+```json
+{ "ids": ["provider-a", "provider-b"] }
+```
+
+### POST /llm/providers/:id/health
+Run a health check for one provider.
+
+### POST /llm/providers/health
+Run health checks for all providers.
+
+---
+
+## Projects
+
+### GET /projects
+List all projects.
+
+### POST /projects
+Create a project.
+
+**Body:**
+```json
+{
+  "name": "Website refresh",
+  "description": "Landing page and onboarding improvements",
+  "folders": [
+    { "label": "frontend", "path": "apps/web", "type": "frontend" },
+    { "label": "backend", "path": "apps/server", "type": "backend" }
+  ]
+}
+```
+
+### PATCH /projects/:id
+Update a project.
+
+### DELETE /projects/:id
+Delete a project.
+
 ---
 
 ## WebSocket Events
@@ -139,9 +225,16 @@ Connect via Socket.IO to `ws://localhost:3001`.
 | `agent:fired`       | Server → Client | `{ id: string }`                   |
 | `task:created`      | Server → Client | `Task`                             |
 | `task:updated`      | Server → Client | `Task`                             |
+| `task:deleted`      | Server → Client | `{ id: string }`                   |
 | `message:sent`      | Server → Client | `AgentMessage`                     |
 | `simulation:tick`   | Server → Client | `{ tick, budget, agentCount }`     |
 | `company:updated`   | Server → Client | `Company`                          |
 | `squad:created`     | Server → Client | `Squad`                            |
 | `squad:updated`     | Server → Client | `Squad`                            |
 | `squad:deleted`     | Server → Client | `{ id: string }`                   |
+| `llm:provider:created` | Server → Client | `LlmProvider`                   |
+| `llm:provider:updated` | Server → Client | `LlmProvider`                   |
+| `llm:provider:deleted` | Server → Client | `{ id: string }`                |
+| `project:created`   | Server → Client | `Project`                          |
+| `project:updated`   | Server → Client | `Project`                          |
+| `project:deleted`   | Server → Client | `{ id: string }`                   |

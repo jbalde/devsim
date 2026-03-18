@@ -1,4 +1,5 @@
 import { Company } from '@devsim/shared';
+import { useI18n } from '../i18n';
 
 interface Props {
   company: Company;
@@ -9,9 +10,12 @@ interface Props {
   onShowTasks: () => void;
   onAutoLayout: () => void;
   onCreateSquad: () => void;
+  onShowLlm: () => void;
+  onShowProjects: () => void;
 }
 
-export function TopBar({ company, running, agentCount, onToggle, onShowHire, onShowTasks, onAutoLayout, onCreateSquad }: Props) {
+export function TopBar({ company, running, agentCount, onToggle, onShowHire, onShowTasks, onAutoLayout, onCreateSquad, onShowLlm, onShowProjects }: Props) {
+  const { t, locale, setLocale } = useI18n();
   return (
     <div
       style={{
@@ -24,24 +28,29 @@ export function TopBar({ company, running, agentCount, onToggle, onShowHire, onS
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-        <span style={{ fontSize: 20, fontWeight: 700 }}>DevSim</span>
+        <span style={{ fontSize: 20, fontWeight: 700 }}>{t.topBar.title}</span>
         <span style={{ color: '#94a3b8' }}>{company.name}</span>
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
-        <Stat label="Budget" value={`$${company.budget.toFixed(0)}`} color="#22c55e" />
-        <Stat label="Tick" value={`#${company.tickCount}`} color="#60a5fa" />
-        <Stat label="Team" value={`${agentCount}`} color="#a78bfa" />
-        <Stat label="Tokens" value={`${company.totalTokensUsed}`} color="#f472b6" />
+        <Stat label={t.topBar.budget} value={`$${company.budget.toFixed(0)}`} color="#22c55e" />
+        <Stat label={t.topBar.tick} value={`#${company.tickCount}`} color="#60a5fa" />
+        <Stat label={t.topBar.team} value={`${agentCount}`} color="#a78bfa" />
+        <Stat label={t.topBar.tokens} value={`${company.totalTokensUsed}`} color="#f472b6" />
       </div>
 
       <div style={{ display: 'flex', gap: 8 }}>
-        <Btn onClick={onShowHire}>Hire</Btn>
-        <Btn onClick={onShowTasks}>Tasks</Btn>
-        <Btn onClick={onAutoLayout}>Autolayout</Btn>
-        <Btn onClick={onCreateSquad}>+ Squad</Btn>
+        <Btn onClick={onShowLlm}>{t.topBar.llm}</Btn>
+        <Btn onClick={onShowProjects}>{t.topBar.projects}</Btn>
+        <Btn onClick={onShowHire}>{t.topBar.hire}</Btn>
+        <Btn onClick={onShowTasks}>{t.topBar.tasks}</Btn>
+        <Btn onClick={onAutoLayout}>{t.topBar.autolayout}</Btn>
+        <Btn onClick={onCreateSquad}>{t.topBar.addSquad}</Btn>
         <Btn onClick={onToggle} accent>
-          {running ? 'Pause' : 'Play'}
+          {running ? t.topBar.pause : t.topBar.play}
+        </Btn>
+        <Btn onClick={() => setLocale(locale === 'en' ? 'es' : 'en')}>
+          {locale.toUpperCase()}
         </Btn>
       </div>
     </div>

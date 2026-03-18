@@ -92,4 +92,13 @@ export class SquadsService {
       }
     }
   }
+
+  /** Restore state from persistence */
+  restore(squads: Squad[]) {
+    this.squads.clear();
+    for (const s of squads) {
+      this.squads.set(s.id, s);
+    }
+    this.colorIndex = squads.length;
+  }
 }

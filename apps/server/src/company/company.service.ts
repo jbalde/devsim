@@ -40,4 +40,9 @@ export class CompanyService {
   addTokensUsed(tokens: number) {
     this.company.totalTokensUsed += tokens;
   }
+
+  /** Restore state from persistence */
+  restore(data: Company) {
+    this.company = { ...data, isRunning: false };
+  }
 }

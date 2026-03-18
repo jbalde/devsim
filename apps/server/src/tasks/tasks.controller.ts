@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Param, Body } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Param, Body } from '@nestjs/common';
 import { TasksService } from './tasks.service';
 import { Task, TaskPriority } from '@devsim/shared';
 
@@ -13,7 +13,7 @@ export class TasksController {
 
   @Post()
   create(
-    @Body() body: { title: string; description: string; priority?: TaskPriority; requiredSkills?: string[]; estimatedTicks?: number },
+    @Body() body: { title: string; description: string; priority?: TaskPriority; requiredSkills?: string[]; estimatedTicks?: number; projectId?: string; squadId?: string },
   ): Task {
     return this.tasksService.create(body);
   }
@@ -21,5 +21,10 @@ export class TasksController {
   @Patch(':id')
   update(@Param('id') id: string, @Body() body: Partial<Task>) {
     return this.tasksService.update(id, body);
+  }
+
+  @Delete(':id')
+  delete(@Param('id') id: string) {
+    return { ok: this.tasksService.delete(id) };
   }
 }

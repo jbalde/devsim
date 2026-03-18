@@ -24,6 +24,8 @@ export interface Task {
   status: TaskStatus;
   priority: TaskPriority;
   assigneeId: string | null;
+  projectId: string | null;
+  squadId: string | null;
   requiredSkills: string[];
   estimatedTicks: number;
   elapsedTicks: number;

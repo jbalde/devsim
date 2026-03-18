@@ -9,7 +9,15 @@ export class TasksService {
 
   constructor(private events: EventsGateway) {}
 
-  create(data: { title: string; description: string; priority?: TaskPriority; requiredSkills?: string[]; estimatedTicks?: number }): Task {
+  create(data: {
+    title: string;
+    description: string;
+    priority?: TaskPriority;
+    requiredSkills?: string[];
+    estimatedTicks?: number;
+    projectId?: string;
+    squadId?: string;
+  }): Task {
     const task: Task = {
       id: uuid(),
       title: data.title,
@@ -17,6 +25,8 @@ export class TasksService {
       status: TaskStatus.BACKLOG,
       priority: data.priority ?? TaskPriority.MEDIUM,
       assigneeId: null,
+      projectId: data.projectId ?? null,
+      squadId: data.squadId ?? null,
       requiredSkills: data.requiredSkills ?? [],
       estimatedTicks: data.estimatedTicks ?? 5,
       elapsedTicks: 0,
@@ -45,6 +55,14 @@ export class TasksService {
     return task;
   }
 
+  delete(id: string): boolean {
+    const deleted = this.tasks.delete(id);
+    if (deleted) {
+      this.events.emit(WsEvent.TASK_DELETED, { id });
+    }
+    return deleted;
+  }
+
   getUnassigned(): Task[] {
     return this.getAll().filter(
       (t) => !t.assigneeId && t.status !== TaskStatus.DONE,
@@ -53,5 +71,13 @@ export class TasksService {
 
   getByAssignee(agentId: string): Task[] {
     return this.getAll().filter((t) => t.assigneeId === agentId);
+  }
+
+  /** Restore state from persistence */
+  restore(tasks: Task[]) {
+    this.tasks.clear();
+    for (const t of tasks) {
+      this.tasks.set(t.id, t);
+    }
   }
 }

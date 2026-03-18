@@ -8,8 +8,12 @@ A digital company simulator where you hire AI agents, organize them into squads,
 - **Create squads** — group agents into teams shown as tables on the office floor
 - **Drag & drop** — drag agents onto squad tables to assign them, rearrange the office freely
 - **Task management** — create tasks and watch managers assign them to workers
+- **Projects** — group work by project and store relevant folder paths
+- **LLM providers** — configure local or remote providers for simulation chat generation
 - **Real-time simulation** — tick-based engine where agents work, communicate, and complete tasks
 - **Live chat** — watch inter-agent messages in real time
+- **Persistence** — resume company state after restarting the app
+- **Localization** — switch the UI and simulation language between English and Spanish
 - **Autolayout** — one-click to organize all agents and squads neatly
 - **Budget tracking** — each agent costs per tick, monitor spending and token usage
 
@@ -70,6 +74,7 @@ yarn clean     # Clean build artifacts
 
 ## Documentation
 
+- [Overview](doc/overview.md)
 - [Architecture](doc/architecture.md)
 - [API Reference](doc/api.md)
 - [Agent Roles](doc/agents.md)

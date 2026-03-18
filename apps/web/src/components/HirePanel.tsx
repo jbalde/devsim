@@ -1,4 +1,5 @@
 import { AgentRole, AGENT_PROFILES } from '@devsim/shared';
+import { useI18n } from '../i18n';
 
 interface Props {
   onHire: (role: AgentRole) => void;
@@ -6,6 +7,7 @@ interface Props {
 }
 
 export function HirePanel({ onHire, onClose }: Props) {
+  const { t } = useI18n();
   const roles = Object.values(AgentRole);
 
   return (
@@ -26,7 +28,7 @@ export function HirePanel({ onHire, onClose }: Props) {
           marginBottom: 12,
         }}
       >
-        <span style={{ fontWeight: 700, fontSize: 14 }}>Hire Agents</span>
+        <span style={{ fontWeight: 700, fontSize: 14 }}>{t.hire.title}</span>
         <button
           onClick={onClose}
           style={{
@@ -68,7 +70,7 @@ export function HirePanel({ onHire, onClose }: Props) {
               <div>
                 <div style={{ fontSize: 12, fontWeight: 600 }}>{p.label}</div>
                 <div style={{ fontSize: 10, color: '#64748b' }}>
-                  ${p.costPerTick}/tick
+                  ${p.costPerTick}{t.hire.costPerTick}
                 </div>
               </div>
             </div>

@@ -1,5 +1,7 @@
-import { Controller, Post, Get } from '@nestjs/common';
+import { Controller, Post, Get, Body } from '@nestjs/common';
 import { SimulationService } from './simulation.service';
+import { setLocale, getLocale } from '@devsim/shared';
+import type { Locale } from '@devsim/shared';
 
 @Controller('simulation')
 export class SimulationController {
@@ -20,5 +22,16 @@ export class SimulationController {
   @Get('status')
   status() {
     return { running: this.sim.isRunning() };
+  }
+
+  @Get('locale')
+  getLocale() {
+    return { locale: getLocale() };
+  }
+
+  @Post('locale')
+  changeLocale(@Body() body: { locale: Locale }) {
+    setLocale(body.locale);
+    return { locale: getLocale() };
   }
 }

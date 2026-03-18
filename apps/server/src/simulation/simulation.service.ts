@@ -5,49 +5,43 @@ import {
   TaskStatus,
   AGENT_PROFILES,
   WsEvent,
+  t,
+  interpolate,
+  getTranslations,
 } from '@devsim/shared';
 import { AgentsService } from '../agents/agents.service';
 import { TasksService } from '../tasks/tasks.service';
 import { CompanyService } from '../company/company.service';
 import { EventsGateway } from '../events/events.gateway';
+import { LlmService } from '../llm/llm.service';
 
 const TICK_INTERVAL_MS = 2000;
 
-const CHAT_LINES: Record<string, string[]> = {
-  working: [
-    'Making progress on this...',
-    'Almost there with this feature.',
-    'Found an edge case, handling it now.',
-    'Writing tests for this module.',
-    'Refactoring a bit before moving on.',
-  ],
-  asking_help: [
-    'Hey, can someone review this approach?',
-    'I need a second opinion on this design.',
-    'Could use some help with this blocker.',
-  ],
-  reviewing: [
-    'Looks good! Just one small suggestion.',
-    'LGTM, nice work!',
-    'Found a potential issue in the implementation.',
-  ],
-  managing: [
-    'Let me check the sprint board...',
-    'Updating the timeline for stakeholders.',
-    'How is everyone doing on their tasks?',
-    'Let\'s make sure we hit the deadline.',
-  ],
+/** Map AgentRole to the translation key path */
+const ROLE_I18N_KEY: Record<AgentRole, keyof ReturnType<typeof t>['agents']> = {
+  [AgentRole.PRODUCT_MANAGER]: 'productManager',
+  [AgentRole.PROJECT_MANAGER]: 'projectManager',
+  [AgentRole.FRONTEND_DEV]: 'frontendDev',
+  [AgentRole.BACKEND_DEV]: 'backendDev',
+  [AgentRole.FULLSTACK_DEV]: 'fullstackDev',
+  [AgentRole.BI_ANALYST]: 'biAnalyst',
+  [AgentRole.SECURITY_ENGINEER]: 'securityEngineer',
+  [AgentRole.QA_ENGINEER]: 'qaEngineer',
+  [AgentRole.DEVOPS_ENGINEER]: 'devopsEngineer',
+  [AgentRole.UX_DESIGNER]: 'uxDesigner',
 };
 
 @Injectable()
 export class SimulationService implements OnModuleDestroy {
-  private timer: ReturnType<typeof setInterval> | null = null;
+  private timer: ReturnType<typeof setTimeout> | null = null;
+  private llmUsedThisTick = false;
 
   constructor(
     private agents: AgentsService,
     private tasks: TasksService,
     private company: CompanyService,
     private events: EventsGateway,
+    private llm: LlmService,
   ) {}
 
   onModuleDestroy() {
@@ -61,22 +55,33 @@ export class SimulationService implements OnModuleDestroy {
   start() {
     if (this.timer) return;
     this.company.update({ isRunning: true });
-    this.timer = setInterval(() => this.tick(), TICK_INTERVAL_MS);
+    this.scheduleTick();
   }
 
   stop() {
     if (!this.timer) return;
-    clearInterval(this.timer);
+    clearTimeout(this.timer);
     this.timer = null;
     this.company.update({ isRunning: false });
   }
 
+  private scheduleTick() {
+    this.timer = setTimeout(async () => {
+      await this.tick();
+      if (this.timer) {
+        this.scheduleTick();
+      }
+    }, TICK_INTERVAL_MS);
+  }
+
   /** One simulation tick — agents work, talk, and advance tasks */
-  private tick() {
+  private async tick() {
     const allAgents = this.agents.getAll();
     const company = this.company.get();
+    const s = t().sim;
 
     this.company.tick();
+    this.llmUsedThisTick = false;
     let tickCost = 0;
 
     for (const agent of allAgents) {
@@ -88,18 +93,23 @@ export class SimulationService implements OnModuleDestroy {
         agent.role === AgentRole.PROJECT_MANAGER ||
         agent.role === AgentRole.PRODUCT_MANAGER
       ) {
-        this.handleManager(agent.id, agent.role);
+        await this.handleManager(agent.id, agent.role);
         continue;
       }
 
       // --- Worker roles: work on assigned task ---
       if (agent.currentTaskId) {
-        this.handleWorker(agent.id, agent.currentTaskId);
+        await this.handleWorker(agent.id, agent.currentTaskId);
       } else {
         // Idle worker — announce availability
         if (Math.random() < 0.15) {
           this.agents.updateAgent(agent.id, { status: AgentStatus.IDLE });
-          this.agents.agentChat(agent.id, null, `I'm free — anyone need help?`);
+          const msg = await this.generateChat(
+            agent.id,
+            s.contextIdle,
+            s.idleAnnounce,
+          );
+          this.agents.agentChat(agent.id, null, msg);
         }
       }
     }
@@ -114,7 +124,8 @@ export class SimulationService implements OnModuleDestroy {
     this.events.emit(WsEvent.COMPANY_UPDATED, this.company.get());
   }
 
-  private handleManager(agentId: string, role: AgentRole) {
+  private async handleManager(agentId: string, role: AgentRole) {
+    const s = t().sim;
     const unassigned = this.tasks.getUnassigned();
     const workers = this.agents
       .getAll()
@@ -126,7 +137,6 @@ export class SimulationService implements OnModuleDestroy {
       );
 
     if (unassigned.length > 0 && workers.length > 0) {
-      // Assign best matching task to available worker
       const task = unassigned[0];
       const worker = workers[0];
 
@@ -139,26 +149,32 @@ export class SimulationService implements OnModuleDestroy {
         status: AgentStatus.WORKING,
       });
 
-      this.agents.agentChat(
+      const assignMsg = await this.generateChat(
         agentId,
-        worker.id,
-        `Hey ${worker.name}, I'm assigning "${task.title}" to you.`,
-        task.id,
+        interpolate(s.contextAssign, { task: task.title, worker: worker.name }),
+        interpolate(s.assignTask, { task: task.title, worker: worker.name }),
       );
-      this.agents.agentChat(
+      this.agents.agentChat(agentId, worker.id, assignMsg, task.id);
+
+      const ackMsg = await this.generateChat(
         worker.id,
-        agentId,
-        `Got it! I'll start working on "${task.title}" now.`,
-        task.id,
+        interpolate(s.contextAck, { task: task.title }),
+        interpolate(s.ackTask, { task: task.title }),
       );
+      this.agents.agentChat(worker.id, agentId, ackMsg, task.id);
     } else if (Math.random() < 0.2) {
-      const line = pick(CHAT_LINES.managing);
+      const line = await this.generateChat(
+        agentId,
+        s.contextManaging,
+        pick(s.managing),
+      );
       this.agents.agentChat(agentId, null, line);
       this.agents.updateAgent(agentId, { status: AgentStatus.TALKING });
     }
   }
 
-  private handleWorker(agentId: string, taskId: string) {
+  private async handleWorker(agentId: string, taskId: string) {
+    const s = t().sim;
     const task = this.tasks.getById(taskId);
     if (!task) return;
 
@@ -167,7 +183,15 @@ export class SimulationService implements OnModuleDestroy {
 
     // Random chat while working
     if (Math.random() < 0.25) {
-      const line = pick(CHAT_LINES.working);
+      const line = await this.generateChat(
+        agentId,
+        interpolate(s.contextWorkUpdate, {
+          task: task.title,
+          elapsed: task.elapsedTicks,
+          estimated: task.estimatedTicks,
+        }),
+        pick(s.working),
+      );
       this.agents.agentChat(agentId, null, line, taskId);
       this.agents.updateAgent(agentId, { status: AgentStatus.TALKING });
     } else {
@@ -185,13 +209,12 @@ export class SimulationService implements OnModuleDestroy {
         status: AgentStatus.IDLE,
       });
 
-      const agent = this.agents.getById(agentId)!;
-      this.agents.agentChat(
+      const doneMsg = await this.generateChat(
         agentId,
-        null,
-        `Finished "${task.title}"! Moving on.`,
-        taskId,
+        interpolate(s.contextFinish, { task: task.title }),
+        interpolate(s.finishTask, { task: task.title }),
       );
+      this.agents.agentChat(agentId, null, doneMsg, taskId);
 
       // Ask for review from a random peer
       const peers = this.agents
@@ -199,20 +222,52 @@ export class SimulationService implements OnModuleDestroy {
         .filter((a) => a.id !== agentId && a.role !== AgentRole.PROJECT_MANAGER && a.role !== AgentRole.PRODUCT_MANAGER);
       if (peers.length > 0) {
         const reviewer = peers[Math.floor(Math.random() * peers.length)];
-        this.agents.agentChat(
+        const reviewReqMsg = await this.generateChat(
           agentId,
-          reviewer.id,
-          `Hey ${reviewer.name}, can you review "${task.title}"?`,
-          taskId,
+          interpolate(s.contextReviewReq, { reviewer: reviewer.name, task: task.title }),
+          interpolate(s.requestReview, { reviewer: reviewer.name, task: task.title }),
         );
-        this.agents.agentChat(
+        this.agents.agentChat(agentId, reviewer.id, reviewReqMsg, taskId);
+
+        const reviewMsg = await this.generateChat(
           reviewer.id,
-          agentId,
-          pick(CHAT_LINES.reviewing),
-          taskId,
+          interpolate(s.contextReviewReply, { task: task.title }),
+          pick(s.reviewing),
         );
+        this.agents.agentChat(reviewer.id, agentId, reviewMsg, taskId);
       }
     }
+  }
+
+  /**
+   * Generate chat via LLM with fallback to hardcoded text.
+   * Only one LLM call per tick to avoid overwhelming local servers.
+   */
+  private async generateChat(agentId: string, context: string, fallback: string): Promise<string> {
+    if (this.llmUsedThisTick || !this.llm.hasProviders()) {
+      return fallback;
+    }
+
+    const agent = this.agents.getById(agentId);
+    if (!agent) return fallback;
+    const profile = AGENT_PROFILES[agent.role];
+    const s = t().sim;
+    const agentI18n = t().agents[ROLE_I18N_KEY[agent.role]];
+
+    this.llmUsedThisTick = true;
+
+    const systemPrompt = interpolate(s.systemPrompt, {
+      name: agent.name,
+      role: agentI18n.label,
+      description: agentI18n.description,
+    });
+
+    const result = await this.llm.chatCompletion([
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: context },
+    ]);
+
+    return result ?? fallback;
   }
 }
 

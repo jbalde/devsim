@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { AgentRole } from '@devsim/shared';
 import { useSimulation } from './useSimulation';
 import { Office } from './components/Office';
@@ -6,12 +6,30 @@ import { HirePanel } from './components/HirePanel';
 import { TaskPanel } from './components/TaskPanel';
 import { ChatLog } from './components/ChatLog';
 import { TopBar } from './components/TopBar';
+import { LlmPanel } from './components/LlmPanel';
+import { ProjectPanel } from './components/ProjectPanel';
 import { api } from './api';
+import { useI18n } from './i18n';
 
 export function App() {
+  const { t } = useI18n();
   const sim = useSimulation();
   const [showHire, setShowHire] = useState(false);
   const [showTasks, setShowTasks] = useState(false);
+  const [showLlm, setShowLlm] = useState(false);
+  const [showProjects, setShowProjects] = useState(false);
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+
+  // Count tasks per project
+  const taskCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const t of sim.tasks) {
+      if (t.projectId) {
+        counts[t.projectId] = (counts[t.projectId] || 0) + 1;
+      }
+    }
+    return counts;
+  }, [sim.tasks]);
 
   const handleAutoLayout = useCallback(async () => {
     const DESK_W = 120;
@@ -45,8 +63,6 @@ export function App() {
     const freeRows = Math.ceil(sorted.length / COLS);
     const squadsStartY = PADDING + freeRows * (DESK_H + PADDING) + SQUAD_GAP;
 
-    // Calculate each squad's width based on member count
-    // SquadTable: SEAT_SIZE=80, gap=8, TABLE_PAD=16, +1 empty seat placeholder
     const SEAT = 80;
     const GAP = 8;
     const TABLE_PAD = 16;
@@ -58,13 +74,12 @@ export function App() {
     const MAX_ROW_W = COLS * (DESK_W + PADDING);
 
     for (let i = 0; i < sim.squads.length; i++) {
-      const memberCount = sim.squads[i].memberIds.length + 1; // +1 for empty placeholder
+      const memberCount = sim.squads[i].memberIds.length + 1;
       const seatsPerRow = Math.min(memberCount, MAX_SEATS_PER_ROW);
       const rows = Math.ceil(memberCount / MAX_SEATS_PER_ROW);
       const squadW = seatsPerRow * (SEAT + GAP) - GAP + TABLE_PAD * 2;
-      const squadH = rows * (SEAT + GAP) - GAP + TABLE_PAD * 2 + 40; // +40 for header
+      const squadH = rows * (SEAT + GAP) - GAP + TABLE_PAD * 2 + 40;
 
-      // Wrap to next row if it would overflow
       if (cursorX + squadW > MAX_ROW_W + PADDING && cursorX > PADDING) {
         cursorX = PADDING;
         cursorY += rowMaxH + SQUAD_GAP;
@@ -78,12 +93,12 @@ export function App() {
   }, [sim.agents, sim.squads, sim.moveSquad]);
 
   const handleCreateSquad = useCallback(async () => {
-    const name = prompt('Squad name:');
+    const name = prompt(t.topBar.squadNamePrompt);
     if (!name?.trim()) return;
-    await api.createSquad({ name: name.trim() });
-  }, []);
+    await sim.createSquad(name.trim());
+  }, [sim.createSquad, t]);
 
-  if (!sim.company) return <div style={{ padding: 40, textAlign: 'center' }}>Loading...</div>;
+  if (!sim.company) return <div style={{ padding: 40, textAlign: 'center' }}>{t.common.loading}</div>;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
@@ -96,13 +111,35 @@ export function App() {
         onShowTasks={() => setShowTasks(!showTasks)}
         onAutoLayout={handleAutoLayout}
         onCreateSquad={handleCreateSquad}
+        onShowLlm={() => setShowLlm(!showLlm)}
+        onShowProjects={() => setShowProjects(!showProjects)}
       />
 
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+        {showProjects && (
+          <ProjectPanel
+            projects={sim.projects}
+            taskCounts={taskCounts}
+            onClose={() => setShowProjects(false)}
+            onRefresh={sim.refresh}
+            onSelect={setSelectedProjectId}
+            selectedId={selectedProjectId}
+          />
+        )}
+
+        {showLlm && (
+          <LlmPanel
+            providers={sim.providers}
+            onClose={() => setShowLlm(false)}
+            onRefresh={sim.refreshProviders}
+          />
+        )}
+
         {showHire && (
           <HirePanel
             onHire={async (role) => {
               await api.hireAgent(role);
+              await sim.refresh();
             }}
             onClose={() => setShowHire(false)}
           />
@@ -114,6 +151,7 @@ export function App() {
           squads={sim.squads}
           onFireAgent={async (id) => {
             await api.fireAgent(id);
+            await sim.refresh();
           }}
           onMoveAgent={async (id, x, y) => {
             await api.updateAgentPosition(id, x, y);
@@ -121,6 +159,7 @@ export function App() {
           onMoveSquad={(id, x, y) => sim.moveSquad(id, x, y)}
           onDeleteSquad={async (id) => {
             await api.deleteSquad(id);
+            await sim.refresh();
           }}
           onAddToSquad={(agentId, squadId) => sim.addToSquad(agentId, squadId)}
           onRemoveFromSquad={(squadId, agentId) => sim.removeFromSquad(squadId, agentId)}
@@ -131,13 +170,18 @@ export function App() {
             <TaskPanel
               tasks={sim.tasks}
               agents={sim.agents}
-              onCreateTask={async (title, description) => {
-                await api.createTask({ title, description });
+              squads={sim.squads}
+              projects={sim.projects}
+              selectedProjectId={selectedProjectId}
+              onCreateTask={async (title, description, projectId, squadId) => {
+                await api.createTask({ title, description, projectId: projectId ?? undefined, squadId: squadId ?? undefined });
               }}
+              onUpdateTask={(id, data) => sim.updateTask(id, data)}
+              onDeleteTask={(id) => sim.deleteTask(id)}
               onClose={() => setShowTasks(false)}
             />
           )}
-          <ChatLog messages={sim.messages} agents={sim.agents} />
+          <ChatLog messages={sim.messages} agents={sim.agents} squads={sim.squads} onClear={sim.clearMessages} />
         </div>
       </div>
     </div>
